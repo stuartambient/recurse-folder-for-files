@@ -1,0 +1,16 @@
+{
+  "name": "folder-function-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "stuartambient",
+  "license": "ISC",
+  "dependencies": {
+    "music-metadata": "^7.13.0"
+  }
+}
