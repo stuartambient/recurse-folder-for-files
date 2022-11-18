@@ -1,10 +1,4 @@
 import { MongoClient } from 'mongodb';
-import pw from '../hidden/hidden.js';
-/* dotenv.config(); */
-
-const uri = pw;
-
-console.log(uri);
 
 /* const client = new MongoClient(url);
 
