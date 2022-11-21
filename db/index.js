@@ -1,6 +1,8 @@
+/* import * as dotenv from 'dotenv'; */
 import { MongoClient } from 'mongodb';
+import { uri } from '../hidden/env.js';
 
-/* const client = new MongoClient(url);
+const client = new MongoClient(uri);
 
 const results = y => console.log('file: ', y);
 
@@ -9,12 +11,9 @@ async function run() {
     await client.connect();
     const database = client.db('library');
     const music = database.collection('music');
-    const query = { name: { $regex: 'carceri' } }; */
-/* OR
-collection.find({ runtime: { $lt: 15 } }, { sort: { title: 1 }, projection: { _id: 0, title: 1, imdb: 1 }});
-collection.find({ runtime: { $lt: 15 } }).sort({ title: 1}).project({ _id: 0, title: 1, imdb: 1 });
-    */
-/* const options = { sort: { name: 1 }, projection: { _id: 0, name: 1 } };
+    const query = { name: { $regex: 'carceri' } };
+
+    const options = { sort: { name: 1 }, projection: { _id: 0, name: 1 } };
     const results = await music.countDocuments(query);
     if (results === 0) {
       console.dir('No documents found!');
@@ -25,5 +24,7 @@ collection.find({ runtime: { $lt: 15 } }).sort({ title: 1}).project({ _id: 0, ti
     await client.close();
   }
 }
-run();
- */
+
+/* run(); */
+
+export default client;
