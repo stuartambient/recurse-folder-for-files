@@ -37,6 +37,7 @@ dist
 dist-ssr
 *.local
 hidden
+db
 
 # Editor directories and files
 .vscode/*

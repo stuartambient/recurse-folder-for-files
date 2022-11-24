@@ -1,5 +1,5 @@
 /* import * as dotenv from 'dotenv'; */
-import { MongoClient } from 'mongodb';
+/* import { MongoClient } from 'mongodb';
 import { uri } from '../hidden/env.js';
 
 const client = new MongoClient(uri);
@@ -23,8 +23,8 @@ async function run() {
   } finally {
     await client.close();
   }
-}
+} */
 
 /* run(); */
 
-export default client;
+/* export default client; */
