@@ -5,10 +5,11 @@ import { Buffer } from "node:buffer";
 import { parseFile } from "music-metadata";
 import Database from "better-sqlite3";
 import { v4 as uuidv4 } from "uuid";
+import { allIds } from "./update.js";
 // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 const db = new Database("./db/audiofiles.db", { verbose: console.log });
 db.pragma("journal_mode = WAL");
-console.log(db);
+/* console.log(db); */
 /* db.prepare(
   `CREATE TABLE files (afid primary key not null, 
                 audioFile text not null,
@@ -29,15 +30,34 @@ console.log(db);
 /* console.log(client); */
 
 const writeFile = (data, filename) => {
-  const file = fs.createWriteStream(filename, { flags: "w+" });
+  const file = fs.createWriteStream(filename, { flags: "a" });
   file.on("error", err => console.log(err));
-  if (Array.isArray(data)) {
-    data.forEach(function (v) {
-      file.write(v + "\n");
-    });
-  }
+  file.write(data + "\n");
+
   file.end();
 };
+
+const updateGenre = async (/* files, cb */) => {
+  const filesWMetadata = [];
+  const allFiles = await allIds();
+  for (const file of allFiles) {
+    try {
+      const metadata = await parseFile(file.audioFile);
+      const { genre } = metadata.common;
+      let genre1;
+      genre ? (genre1 = genre.join(",")) : null;
+      const id = file.afid;
+
+      filesWMetadata.push({ id, genre1 });
+    } catch (err) {
+      writeFile(file.audioFile, "./metadataErrors.txt");
+      console.error(err);
+    }
+  }
+  console.log(filesWMetadata);
+};
+
+/* updateGenre(); */
 
 const parseMeta = async (files, cb) => {
   const filesWMetadata = [];
@@ -71,7 +91,8 @@ const parseMeta = async (files, cb) => {
       console.error(err);
     }
   }
-  cb(filesWMetadata);
+  /*  cb(filesWMetadata); */
+  filesWMetadata.forEach(f => console.log(f.genre1));
 };
 
 const playlistFiles = [
@@ -116,6 +137,7 @@ const results = res => {
     });
 
     insertMany(wMeta);
+    db.close();
   };
   const xtractedFiles = (files, length) => {
     parseMeta(files, filesWithMetadata);
@@ -131,11 +153,11 @@ const back = (roots, all = []) => {
   back(roots, all);
 };
 
-back([
-  /* "J:S_Music", */
-  /* 'I:/Music',
-  'H:/Top/Music',
-  'F:/Music',*/
+/* back([
+  "J:/S_Music",
+  "I:/Music",
+  "H:/Top/Music",
+  "F:/Music",
   "D:/G_MUSIC",
   "D:/music",
-]);
+]); */
