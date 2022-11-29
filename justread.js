@@ -5,14 +5,17 @@ import { Buffer } from "node:buffer";
 import { parseFile } from "music-metadata";
 import Database from "better-sqlite3";
 import { v4 as uuidv4 } from "uuid";
-import { allIds } from "./update.js";
+/* import { allIds } from "./update.js"; */
 // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 const db = new Database("./db/audiofiles.db", { verbose: console.log });
 db.pragma("journal_mode = WAL");
 /* console.log(db); */
 /* db.prepare(
   `CREATE TABLE files (afid primary key not null, 
+                root,
                 audioFile text not null,
+                modified,
+                extension,
                 year, 
                 title, 
                 artist,
@@ -21,7 +24,8 @@ db.pragma("journal_mode = WAL");
                 picture, 
                 lossless,
                 bitrate,
-                sample_rate)`
+                sample_rate,
+                like)`
 ).run(); */
 
 /* db.prepare('DROP TABLE file').run(); */
@@ -37,52 +41,28 @@ const writeFile = (data, filename) => {
   file.end();
 };
 
-const updateGenre = async (/* files, cb */) => {
-  const filesWMetadata = [];
-  const allFiles = await allIds();
-  for (const file of allFiles) {
-    try {
-      const metadata = await parseFile(file.audioFile);
-      const { genre } = metadata.common;
-      let genre1;
-      genre ? (genre1 = genre.join(",")) : null;
-      const id = file.afid;
-
-      filesWMetadata.push({ id, genre1 });
-    } catch (err) {
-      writeFile(file.audioFile, "./metadataErrors.txt");
-      console.error(err);
-    }
-  }
-  console.log(filesWMetadata);
-};
-
-/* updateGenre(); */
-
 const parseMeta = async (files, cb) => {
   const filesWMetadata = [];
   for (const audioFile of files) {
+    const modified = fs.statSync(audioFile).mtimeMs;
     try {
       const metadata = await parseFile(audioFile);
-      const { year, title, artist, album, genre, picture } = metadata.common;
+      let { year, title, artist, album, genre, picture } = metadata.common;
       const { lossless, bitrate, sampleRate } = metadata.format;
-      let genre1, imgData, isLossless;
-      genre ? (genre1 = genre[0]) : null;
-      picture ? (imgData = picture[0].data) : null;
-      lossless === false ? (isLossless = 0) : (isLossless = 1);
-
       const afid = uuidv4();
 
       filesWMetadata.push({
         afid,
         audioFile,
+        modified,
+        extension: path.extname(audioFile),
         year,
         title,
         artist,
         album,
-        genre1,
-        imgData,
-        isLossless,
+        genre: genre ? (genre = genre.join(",")) : null,
+        picture: picture ? (picture = picture[0].data) : null,
+        lossless: lossless === false ? 0 : 1,
         bitrate,
         sampleRate,
       });
@@ -91,8 +71,7 @@ const parseMeta = async (files, cb) => {
       console.error(err);
     }
   }
-  /*  cb(filesWMetadata); */
-  filesWMetadata.forEach(f => console.log(f.genre1));
+  cb(filesWMetadata);
 };
 
 const playlistFiles = [
@@ -128,8 +107,9 @@ const scan = (dirs, files = [], cb) => {
 
 const results = res => {
   const filesWithMetadata = async wMeta => {
+    console.log(Date());
     const insert = db.prepare(
-      "INSERT INTO files VALUES (@afid, @audioFile, @year, @title, @artist, @album, @genre1, @imgData, @isLossless, @bitrate, @sampleRate)"
+      "INSERT INTO files VALUES (@afid, null, @audioFile, @modified, @extension, @year, @title, @artist, @album, @genre, @picture, @lossless, @bitrate, @sampleRate, 0)"
     );
 
     const insertMany = db.transaction(files => {
@@ -140,12 +120,20 @@ const results = res => {
     db.close();
   };
   const xtractedFiles = (files, length) => {
-    parseMeta(files, filesWithMetadata);
+    /* parseMeta(files, filesWithMetadata); */
+    const dbFiles = db.prepare("SELECT audioFile FROM files");
+    const df = dbFiles.all();
+    const dbAll = df.map(d => d.audioFile);
+
+    const newEntries = files.filter(n => !dbAll.includes(n));
+    parseMeta(newEntries, filesWithMetadata);
+    /*  db.close(); */
   };
   scan(res, [], xtractedFiles);
 };
 
 const back = (roots, all = []) => {
+  console.log(Date());
   if (!roots.length) return results(all);
   const root = roots.shift();
   const dirs = fs.readdirSync(root).map(r => `${root}/${r}`);
@@ -153,11 +141,11 @@ const back = (roots, all = []) => {
   back(roots, all);
 };
 
-/* back([
-  "J:/S_Music",
+back([
+  /*  "J:/S_Music",
   "I:/Music",
-  "H:/Top/Music",
-  "F:/Music",
-  "D:/G_MUSIC",
+  "H:/Top/Music", */
+  /* "F:/Music", */
+  /* "D:/G_MUSIC", */
   "D:/music",
-]); */
+]);

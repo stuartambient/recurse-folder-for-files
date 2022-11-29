@@ -1,6 +1,25 @@
 import Database from "better-sqlite3";
+import fs from "node:fs";
 
 const db = new Database("./db/audiofiles.db", { verbose: console.log });
+db.pragma("journal_mode = WAL");
+
+const roots = [
+  "J:/S_Music/",
+  "I:/Music/",
+  "H:/Top/Music/",
+  "F:/Music/",
+  "D:/G_MUSIC/",
+  "D:/music/",
+];
+
+const writeFile = (data, filename) => {
+  const file = fs.createWriteStream(filename, { flags: "a" });
+  file.on("error", err => console.log(err));
+  file.write(data + "\n");
+
+  file.end();
+};
 
 const nullMainMeta = () => {
   const stmt = db.prepare(
@@ -70,5 +89,40 @@ const getFileRoot = () => {
   console.log("filter: ", filter);
   db.close();
 };
-getFileRoot();
-export { allIds };
+
+const updateRoot = () => {
+  const rootsql = db.prepare(
+    `UPDATE files SET root = ? WHERE audioFile LIKE ?`
+  );
+  /*   const info = rootsql.run("F:/Music/", "%F:/Music/%"); */
+  const updateMany = db.transaction(roots => {
+    for (const r of roots) rootsql.run(`${r}`, `%${r}%`);
+  });
+
+  updateMany(roots);
+  db.close();
+};
+
+updateRoot();
+const extension = type => {
+  const stmt = db.prepare(
+    "SELECT audioFile FROM files WHERE extension = '.ape' OR extension = '.m4a' OR extension = '.ogg' ORDER BY extension"
+  );
+  /*   const extensions = stmt.all(); */
+  for (const ext of stmt.iterate()) {
+    writeFile(ext.audioFile, "./lesser-extensions");
+  }
+
+  db.close();
+};
+
+const typeTotals = type => {
+  const totals = db.prepare("SELECT COUNT(*) FROM files WHERE extension = ?");
+  const totalCount = totals.all(type);
+  console.log(totalCount[0]["COUNT(*)"]);
+  db.close();
+};
+
+/* typeTotals(".ogg"); */
+/* getFileRoot(); */
+/* export { allIds };  */
