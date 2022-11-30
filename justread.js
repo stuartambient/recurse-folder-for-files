@@ -5,43 +5,26 @@ import { Buffer } from "node:buffer";
 import { parseFile } from "music-metadata";
 import Database from "better-sqlite3";
 import { v4 as uuidv4 } from "uuid";
+import {
+  roots,
+  playlistExtensions,
+  audioExtensions,
+} from "./constant/constants.js";
+
 /* import { allIds } from "./update.js"; */
 // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 const db = new Database("./db/audiofiles.db", { verbose: console.log });
 db.pragma("journal_mode = WAL");
-/* console.log(db); */
-/* db.prepare(
-  `CREATE TABLE files (afid primary key not null, 
-                root,
-                audioFile text not null,
-                modified,
-                extension,
-                year, 
-                title, 
-                artist,
-                album, 
-                genre, 
-                picture, 
-                lossless,
-                bitrate,
-                sample_rate,
-                like)`
-).run(); */
 
-/* db.prepare('DROP TABLE file').run(); */
-/* import client from './db/index.js'; */
-
-/* console.log(client); */
-
-const writeFile = (data, filename) => {
+/* const writeFile = (data, filename) => {
   const file = fs.createWriteStream(filename, { flags: "a" });
   file.on("error", err => console.log(err));
   file.write(data + "\n");
 
   file.end();
-};
+}; */
 
-const parseMeta = async (files, cb) => {
+/* const parseMeta = async (files, cb) => {
   const filesWMetadata = [];
   for (const audioFile of files) {
     const modified = fs.statSync(audioFile).mtimeMs;
@@ -72,9 +55,9 @@ const parseMeta = async (files, cb) => {
     }
   }
   cb(filesWMetadata);
-};
+}; */
 
-const playlistFiles = [
+/* const playlistFiles = [
   ".m3u",
   ".PLS",
   ".XSPF",
@@ -84,7 +67,7 @@ const playlistFiles = [
   ".IFO,",
   ".CUE",
 ];
-const audioFiles = [".mp3", ".flac", ".ape", ".m4a", ".ogg"];
+const audioFiles = [".mp3", ".flac", ".ape", ".m4a", ".ogg"]; */
 
 const scan = (dirs, files = [], cb) => {
   if (!dirs.length) return cb(files.sort(), files.length);
@@ -96,7 +79,7 @@ const scan = (dirs, files = [], cb) => {
     .filter(
       o =>
         fs.statSync(`${next}/${o}`).isFile() &&
-        audioFiles.includes(path.extname(`${next}/${o}`))
+        audioExtensions.includes(path.extname(`${next}/${o}`))
     )
     .map(el => `${next}/${el}`);
   const d = folder
@@ -125,27 +108,26 @@ const results = res => {
     const df = dbFiles.all();
     const dbAll = df.map(d => d.audioFile);
 
-    const newEntries = files.filter(n => !dbAll.includes(n));
-    parseMeta(newEntries, filesWithMetadata);
+    /* dbAll.forEach(d => console.log(d)); */
+
+    /* const newEntries = files.filter(n => !dbAll.includes(n)); */
+    /*  const missingEntries = dbAll.filter(y => !files.includes(y));   */
+    /* parseMeta(newEntries, filesWithMetadata); */
+    /* console.log(newEntries, missingEntries); */
     /*  db.close(); */
+    /* console.log(newEntries); */
+    db.close();
   };
   scan(res, [], xtractedFiles);
 };
 
-const back = (roots, all = []) => {
+const run = (roots, all = []) => {
   console.log(Date());
   if (!roots.length) return results(all);
   const root = roots.shift();
   const dirs = fs.readdirSync(root).map(r => `${root}/${r}`);
   all.push(...dirs);
-  back(roots, all);
+  run(roots, all);
 };
 
-back([
-  /*  "J:/S_Music",
-  "I:/Music",
-  "H:/Top/Music", */
-  /* "F:/Music", */
-  /* "D:/G_MUSIC", */
-  "D:/music",
-]);
+run(roots);

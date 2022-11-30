@@ -3,6 +3,10 @@ import { EventEmitter } from "node:events";
 import path from "node:path";
 import { Buffer } from "node:buffer";
 import { parseFile } from "music-metadata";
+import { parseMeta } from "./utility/index.js";
+import { roots } from "./constant/constants.js";
+
+console.log(roots);
 
 const writeFile = (data, filename) => {
   const file = fs.createWriteStream(filename, { flags: "a" });
@@ -12,39 +16,20 @@ const writeFile = (data, filename) => {
   file.end();
 };
 
-const parseMeta = async (files, cb) => {
+/* const parseMeta = async (files, cb) => {
+  return console.log("Audio files count before metadata: ", files.length);
   const filesWMetadata = [];
   for (const audioFile of files) {
-    /* const modified = fs.statSync(audioFile).mtimeMs; */
     try {
       const metadata = await parseFile(audioFile);
-      console.log(metadata.common.title);
-      /* let { year, title, artist, album, genre, picture } = metadata.common;
-      const { lossless, bitrate, sampleRate } = metadata.format;
-      const afid = uuidv4();
-
-      filesWMetadata.push({
-        afid,
-        audioFile,
-        modified,
-        extension: path.extname(audioFile),
-        year,
-        title,
-        artist,
-        album,
-        genre: genre ? (genre = genre.join(",")) : null,
-        picture: picture ? (picture = picture[0].data) : null,
-        lossless: lossless === false ? 0 : 1,
-        bitrate,
-        sampleRate,
-      }); */
+      console.log(metadata.common);
     } catch (err) {
       writeFile(audioFile + "message " + err.message, "./metadataErrors.txt");
       console.error(err.message);
     }
-  }
-  /* cb(filesWMetadata); */
-};
+  } */
+/* cb(filesWMetadata); */
+/* }; */
 
 const audioFiles = [".mp3", ".flac", ".ape", ".m4a", ".ogg"];
 
@@ -80,11 +65,14 @@ const back = (roots, all = []) => {
   back(roots, all);
 };
 
-back([
-  /*  "J:/S_Music",
-    "I:/Music",
-    "H:/Top/Music", */
-  /* "F:/Music", */
-  /* "D:/G_MUSIC", */
+/* back([
+  "J:/S_Music",
+  "I:/Music",
+  "H:/Top/Music",
+  "F:/Music",
+  "D:/G_MUSIC",
   "D:/music",
 ]);
+ */
+
+back(roots);
