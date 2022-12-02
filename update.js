@@ -1,25 +1,13 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 
-const db = new Database("./db/audiofiles.db", { verbose: console.log });
-db.pragma("journal_mode = WAL");
-
-const roots = [
-  "J:/S_Music/",
-  "I:/Music/",
-  "H:/Top/Music/",
-  "F:/Music/",
-  "D:/G_MUSIC/",
-  "D:/music/",
-];
-
-const writeFile = (data, filename) => {
+/* const writeFile = (data, filename) => {
   const file = fs.createWriteStream(filename, { flags: "a" });
   file.on("error", err => console.log(err));
   file.write(data + "\n");
 
   file.end();
-};
+}; */
 
 const nullMainMeta = () => {
   const stmt = db.prepare(
@@ -59,22 +47,6 @@ const allIds = () => {
   const info = stmt.all();
   return info;
   db.close;
-};
-
-const createView = () => {
-  const tempView = db.prepare(
-    "CREATE VIEW genres AS SELECT DISTINCT album, artist FROM files GROUP BY album"
-  );
-  const view = tempView.run();
-  console.log(view);
-  db.close();
-};
-
-const useView = () => {
-  const myview = db.prepare("SELECT * FROM genres");
-  const c = myview.all();
-  console.log(c);
-  db.close();
 };
 
 /* const idxs = db.pragma("index_list(files)");

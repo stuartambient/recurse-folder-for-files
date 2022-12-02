@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import { Buffer } from "node:buffer";
+/* import { Buffer } from "node:buffer"; */
+import { v4 as uuidv4 } from "uuid";
 import { parseFile } from "music-metadata";
 
 const parseMeta = async (files, cb) => {
-  return console.log(files, cb);
   const filesWMetadata = [];
   for (const audioFile of files) {
     const modified = fs.statSync(audioFile).mtimeMs;
@@ -31,6 +31,7 @@ const parseMeta = async (files, cb) => {
       });
     } catch (err) {
       writeFile(audioFile, "./metadataErrors.txt");
+      fs.renameSync(`${audioFile}`, `${audioFile}.bad`);
       console.error(err);
     }
   }

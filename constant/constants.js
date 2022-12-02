@@ -1,12 +1,11 @@
 const roots = [
-  "J:/S_Music/",
-  "I:/Music/",
-  "H:/Top/Music/",
-  "F:/Music/",
-  "D:/G_MUSIC/",
-  "D:/music/",
+  "J:/S_Music",
+  "I:/Music",
+  "H:/Top/Music",
+  "F:/Music",
+  "D:/G_MUSIC",
+  "D:/music",
 ];
-
 const playlistExtensions = [
   ".m3u",
   ".PLS",
