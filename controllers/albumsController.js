@@ -5,7 +5,7 @@ import { roots } from "../constant/constants.js";
 import { insertAlbums, deleteAlbums, getAlbums } from "../sql.js";
 const [...newroots] = roots;
 
-const parseNewEntries = newEntries => {
+const parseNewEntries = (newEntries, cb) => {
   const albumsArr = [];
 
   for (const entry of newEntries) {
@@ -24,33 +24,36 @@ const parseNewEntries = newEntries => {
     albumsArr.push({ _id, root, name, fullpath });
   }
 
-  insertAlbums(albumsArr, res => console.log(res));
+  insertAlbums(albumsArr, cb);
 };
 
-const checkAgainstEntries = data => {
+const checkAgainstEntries = (data, cb) => {
   /* const ce = dbEntries.all(); */
   const currentEntries = getAlbums();
   const mappedCurrentEntries = currentEntries.map(dbe => dbe.fullpath);
   const newEntries = data.filter(n => !mappedCurrentEntries.includes(n));
   const missingEntries = mappedCurrentEntries.filter(x => !data.includes(x));
   if (newEntries.length > 0) {
-    parseNewEntries(newEntries);
+    parseNewEntries(newEntries, cb);
   }
   if (missingEntries.length > 0) {
-    deleteAlbums(missingEntries, res => console.log(res));
+    deleteAlbums(missingEntries, cb);
   } else if (!newEntries.length && !missingEntries.length) {
-    console.log("nothing to change");
+    cb("nothing to change");
   }
 };
 
-const runAlbums = (roots, all = []) => {
-  if (!roots.length) return checkAgainstEntries(all);
+const runAlbums = (roots, all = [], cb) => {
+  if (!roots.length) return checkAgainstEntries(all, cb);
   const root = roots.shift();
   const dirs = fs.readdirSync(root).map(r => `${root}/${r}`);
   all.push(...dirs);
-  runAlbums(roots, all);
+  runAlbums(roots, all, cb);
 };
 
-const initAlbums = () => runAlbums(roots);
+const initAlbums = () => {
+  const endResults = r => console.log("end results: ", r);
+  runAlbums(roots, [], endResults);
+};
 
 export default initAlbums;

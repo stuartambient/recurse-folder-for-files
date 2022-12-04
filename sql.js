@@ -31,7 +31,7 @@ const updateRoot = () => {
   db.close();
 };
 
-updateRoot();
+/* updateRoot(); */
 
 /* db.backup(`audiofiles-bu.db`)
   .then(() => {
@@ -47,6 +47,7 @@ const insertFiles = (files, cb) => {
   );
 
   const insertMany = db.transaction(files => {
+    console.log(this);
     for (const f of files) insert.run(f);
   });
 
@@ -76,9 +77,8 @@ const insertAlbums = (data, cb) => {
     for (const a of albums) insert.run(a);
   });
 
-  const info = insertMany(data);
-  cb(info);
-  /* db.close(); */
+  insertMany(data);
+  cb(data);
 };
 
 const deleteAlbums = async (data, cb) => {
@@ -86,22 +86,19 @@ const deleteAlbums = async (data, cb) => {
   const deleteMany = db.transaction(data => {
     for (const d of data) deleteA.run(d);
   });
-  const info = deleteMany(data);
-  cb(info);
-  /* db.close(); */
+  deleteMany(data);
+  cb(data);
 };
 
 const getAlbums = () => {
   const getAllAlbums = db.prepare("SELECT fullpath FROM albums");
   const albums = getAllAlbums.all();
-  /* db.close(); */
   return albums;
 };
 
 const getFiles = () => {
   const allFiles = db.prepare("SELECT audioFile FROM files");
   const files = allFiles.all();
-  /* db.close(); */
   return files;
 };
 
