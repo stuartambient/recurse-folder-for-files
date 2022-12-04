@@ -9,23 +9,40 @@ import {
   audioExtensions,
 } from "../constant/constants.js";
 import { getFiles, insertFiles, deleteFiles } from "../sql.js";
+const emitter = new EventEmitter();
 
 const filesWithMetadata = async mdFiles => {
-  insertFiles(mdFiles);
+  insertFiles(mdFiles, emitter);
+};
+const difference = (setA, setB) => {
+  const _difference = new Set(setA);
+  for (const elem of setB) {
+    _difference.delete(elem);
+  }
+  return _difference;
 };
 
 const compareDb2Filelist = files => {
   const dbFiles = getFiles();
   const dbAll = dbFiles.map(d => d.audioFile);
 
-  const newEntries = files.filter(f => !dbAll.includes(f));
+  const allfiles = new Set(files);
+  const dbentries = new Set(dbAll);
+
+  const newEntries = Array.from(difference(allfiles, dbentries));
+  const missingEntries = Array.from(difference(dbentries, allfiles));
+
+  /*   const newEntries = files.filter(f => !dbAll.includes(f));
   const missingEntries = dbAll.filter(f => !files.includes(f));
+  */
 
   if (newEntries.length > 0) {
     parseMeta(newEntries, filesWithMetadata);
   }
   if (missingEntries.length > 0) {
-    deleteFiles(missingEntries);
+    deleteFiles(missingEntries, emitter);
+  } else if (!newEntries.length && !missingEntries.length) {
+    emitter.emit("no changes", "no changes...");
   }
 };
 
@@ -58,9 +75,17 @@ const runFiles = (roots, alldirectories = []) => {
   runFiles(roots, alldirectories);
 };
 
-const initFiles = () => {
+const initFiles = async () => {
   const [...newroots] = roots;
+
   runFiles(newroots);
+  emitter.on("insert-files-completed", inserted =>
+    inserted.forEach(i => console.log(`Inserted: ${i.audioFile}`))
+  );
+  emitter.on("delete-files-completed", deleted =>
+    deleted.forEach(d => console.log(`Deleted: ${d}`))
+  );
+  emitter.on("no changes", x => console.log(x));
 };
 
 export default initFiles;

@@ -2,6 +2,10 @@ import Database from "better-sqlite3";
 import { roots } from "./constant/constants.js";
 const db = new Database("./db/audiofiles.db", { verbose: console.log });
 db.pragma("journal_mode = WAL");
+db.pragma("synchronous = normal");
+db.pragma("page_size = 32768");
+db.pragma("mmap_size = 30000000000");
+db.pragma("temp_store = memory");
 
 const createTable = () => {
   const ct = db.prepare("CREATE TABLE IF NOT EXISTS mytable ( col1, col2)");
@@ -41,7 +45,7 @@ const updateRoot = () => {
     console.log("backup failed:", err);
   }); */
 
-const insertFiles = (files, cb) => {
+const insertFiles = (files, emitter) => {
   const insert = db.prepare(
     "INSERT INTO files VALUES (@afid, null, @audioFile, @modified, @extension, @year, @title, @artist, @album, @genre, @picture, @lossless, @bitrate, @sampleRate, 0)"
   );
@@ -52,23 +56,24 @@ const insertFiles = (files, cb) => {
   });
 
   const info = insertMany(files);
+  emitter.emit("insert-files-completed", files);
   /* db.close(); */
-  cb(info);
 };
 
-const deleteFiles = (files, cb) => {
+const deleteFiles = (files, emitter) => {
   const deleteFile = db.prepare("DELETE FROM files WHERE audioFile = ?");
 
   const deleteMany = db.transaction(files => {
+    console.log(this);
     for (const f of files) deleteFile.run(f);
   });
 
   const info = deleteMany(files);
-  cb(info);
-  /* db.close(); */
+
+  emitter.emit("delete-files-completed", files);
 };
 
-const insertAlbums = (data, cb) => {
+const insertAlbums = (data, emitter) => {
   const insert = db.prepare(
     "INSERT INTO albums(_id, rootloc, foldername, fullpath) VALUES (@_id, @root, @name, @fullpath)"
   );
@@ -78,16 +83,16 @@ const insertAlbums = (data, cb) => {
   });
 
   insertMany(data);
-  cb(data);
+  emitter.emit("insert-albums-completed", data);
 };
 
-const deleteAlbums = async (data, cb) => {
+const deleteAlbums = async (data, emitter) => {
   const deleteA = db.prepare("DELETE FROM albums WHERE fullpath = ?");
   const deleteMany = db.transaction(data => {
     for (const d of data) deleteA.run(d);
   });
   deleteMany(data);
-  cb(data);
+  emitter.emit("delete-albums-completed", data);
 };
 
 const getAlbums = () => {
