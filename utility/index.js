@@ -4,7 +4,7 @@ import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import { parseFile } from "music-metadata";
 
-const parseMeta = async (files, cb) => {
+const parseMeta = async files => {
   const filesWMetadata = [];
   for (const audioFile of files) {
     const modified = fs.statSync(audioFile).mtimeMs;
@@ -35,7 +35,7 @@ const parseMeta = async (files, cb) => {
       console.error(err);
     }
   }
-  cb(filesWMetadata);
+  return filesWMetadata;
 };
 
 const writeFile = (data, filename) => {

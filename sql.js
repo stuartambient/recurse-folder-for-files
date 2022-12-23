@@ -1,11 +1,12 @@
 import Database from "better-sqlite3";
 import { roots } from "./constant/constants.js";
-const db = new Database("./db/audiofiles.db", { verbose: console.log });
+const db = new Database("./db/audiofiles.db" /* , { verbose: console.log } */);
 db.pragma("journal_mode = WAL");
 db.pragma("synchronous = normal");
 db.pragma("page_size = 32768");
 db.pragma("mmap_size = 30000000000");
 db.pragma("temp_store = memory");
+db.pragma("foreign_keys");
 
 const createTable = () => {
   const ct = db.prepare("CREATE TABLE IF NOT EXISTS mytable ( col1, col2)");
@@ -45,35 +46,30 @@ const updateRoot = () => {
     console.log("backup failed:", err);
   }); */
 
-const insertFiles = (files, emitter) => {
+const insertFiles = files => {
   const insert = db.prepare(
     "INSERT INTO files VALUES (@afid, null, @audioFile, @modified, @extension, @year, @title, @artist, @album, @genre, @picture, @lossless, @bitrate, @sampleRate, 0)"
   );
 
   const insertMany = db.transaction(files => {
-    console.log(this);
     for (const f of files) insert.run(f);
   });
 
   const info = insertMany(files);
-  emitter.emit("insert-files-completed", files);
   /* db.close(); */
 };
 
-const deleteFiles = (files, emitter) => {
+const deleteFiles = files => {
   const deleteFile = db.prepare("DELETE FROM files WHERE audioFile = ?");
 
   const deleteMany = db.transaction(files => {
-    console.log(this);
     for (const f of files) deleteFile.run(f);
   });
 
   const info = deleteMany(files);
-
-  emitter.emit("delete-files-completed", files);
 };
 
-const insertAlbums = (data, emitter) => {
+const insertAlbums = data => {
   const insert = db.prepare(
     "INSERT INTO albums(_id, rootloc, foldername, fullpath) VALUES (@_id, @root, @name, @fullpath)"
   );
@@ -83,16 +79,16 @@ const insertAlbums = (data, emitter) => {
   });
 
   insertMany(data);
-  emitter.emit("insert-albums-completed", data);
+  /* emitter.emit("insert-albums-completed", data); */
 };
 
-const deleteAlbums = async (data, emitter) => {
+const deleteAlbums = async data => {
   const deleteA = db.prepare("DELETE FROM albums WHERE fullpath = ?");
   const deleteMany = db.transaction(data => {
     for (const d of data) deleteA.run(d);
   });
   deleteMany(data);
-  emitter.emit("delete-albums-completed", data);
+  /* emitter.emit("delete-albums-completed", data); */
 };
 
 const getAlbums = () => {
@@ -115,6 +111,26 @@ const searchAlbums = async () => {
   console.log(info);
   /*  db.close(); */
 };
+
+const filesByAlbum = albumPath => {
+  const album = db.prepare("SELECT fullpath FROM albums WHERE fullpath = ?");
+  const getAlbum = album.get(albumPath);
+  /* const stmt = db.prepare("SELECT audioFile FROM files WHERE "); */
+  const albumpath = getAlbum.fullpath;
+  const files = db.prepare(
+    "SELECT afid,audioFile FROM files WHERE audioFile LIKE ?"
+  );
+  const assocFiles = files.all(`${albumpath}%`);
+  const albumFiles = [];
+  assocFiles.forEach(a => {
+    albumFiles.push(a);
+  });
+  return albumFiles;
+};
+
+/* filesByAlbum("F:/Music/Claustrum [Discography]"); */
+
+/* filesByAlbum(); */
 
 export {
   insertFiles,

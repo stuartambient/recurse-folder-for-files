@@ -18,4 +18,6 @@ const playlistExtensions = [
 ];
 const audioExtensions = [".mp3", ".flac", ".ape", ".m4a", ".ogg"];
 
-export { roots, playlistExtensions, audioExtensions };
+const fileExtensions = "{mp3,flac,ape,m4a,ogg}";
+
+export { roots, playlistExtensions, audioExtensions, fileExtensions };

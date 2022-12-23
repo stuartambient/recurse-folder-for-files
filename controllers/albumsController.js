@@ -1,13 +1,11 @@
-import fs from "node:fs";
-import { EventEmitter } from "node:events";
+import { promises as fsPromises } from "node:fs";
 import { v4 as uuidv4 } from "uuid";
 import { roots } from "../constant/constants.js";
 import { insertAlbums, deleteAlbums, getAlbums } from "../sql.js";
 const [...newroots] = roots;
-const emitter = new EventEmitter();
 
 const parseNewEntries = newEntries => {
-  const albumsArr = [];
+  const newAlbums = [];
 
   for (const entry of newEntries) {
     const _id = uuidv4();
@@ -22,10 +20,9 @@ const parseNewEntries = newEntries => {
       const _id = uuidv4();
       fullpath = entry;
     }
-    albumsArr.push({ _id, root, name, fullpath });
+    newAlbums.push({ _id, root, name, fullpath });
   }
-
-  insertAlbums(albumsArr, emitter);
+  return newAlbums;
 };
 
 const difference = (setA, setB) => {
@@ -37,44 +34,58 @@ const difference = (setA, setB) => {
 };
 
 const checkAgainstEntries = data => {
-  /* const ce = dbEntries.all(); */
-  const dbAlbums = getAlbums();
-  const dbAlbumsFullpath = dbAlbums.map(album => album.fullpath);
+  return new Promise((resolve, reject) => {
+    let status = { deleted: 0, new: 0, nochange: false };
+    const dbAlbums = getAlbums();
+    const dbAlbumsFullpath = dbAlbums.map(album => album.fullpath);
 
-  const allAlbums = new Set(data);
-  const dbEntries = new Set(dbAlbumsFullpath);
+    const allAlbums = new Set(data);
+    const dbEntries = new Set(dbAlbumsFullpath);
 
-  const newEntries = Array.from(difference(allAlbums, dbEntries));
-  const missingEntries = Array.from(difference(dbEntries, allAlbums));
+    const newEntries = Array.from(difference(allAlbums, dbEntries));
+    const missingEntries = Array.from(difference(dbEntries, allAlbums));
 
-  if (newEntries.length > 0) {
-    parseNewEntries(newEntries);
-  }
-  if (missingEntries.length > 0) {
-    deleteAlbums(missingEntries, emitter);
-  } else if (!newEntries.length && !missingEntries.length) {
-    emitter.emit("no changes", "no changes...");
-  }
+    if (newEntries.length > 0) {
+      status.new = newEntries;
+    }
+    if (missingEntries.length > 0) {
+      status.deleted = missingEntries;
+    } else {
+      status.nochange = true;
+    }
+    return resolve(status);
+  });
 };
 
-const runAlbums = (roots, all = []) => {
-  if (!roots.length) return checkAgainstEntries(all);
+const runAlbums = async (roots, all = [], cb) => {
+  if (!roots.length)
+    return (
+      Promise.resolve(all)
+        /* .then(r => checkAgainstEntries(r)) */
+        .then(checkAgainstEntries)
+        .then(status => {
+          if (status.deleted) {
+            deleteAlbums(status.deleted);
+          }
+          if (status.new) {
+            const parsed = parseNewEntries(status.new);
+            insertAlbums(parsed);
+          }
+          return cb(status);
+        })
+    );
+
   const root = roots.shift();
-  const dirs = fs.readdirSync(root).map(r => `${root}/${r}`);
-  all.push(...dirs);
-  runAlbums(roots, all);
+  const dirs = fsPromises
+    .readdir(root)
+    .then(rfs => rfs.map(r => `${root}/${r}`))
+    .then(r => all.push(...r))
+    .then(() => runAlbums(roots, all, cb));
 };
 
-const initAlbums = () => {
+const initAlbums = async () => {
   const [...newroots] = roots;
-  runAlbums(roots);
-  emitter.on("insert-albums-completed", inserted =>
-    inserted.forEach(i => console.log(`Inserted: ${i.fullpath}`))
-  );
-  emitter.on("delete-albums-completed", deleted =>
-    deleted.forEach(d => console.log(`Deleted: ${d}`))
-  );
-  emitter.on("no changes", x => console.log(x));
+  runAlbums(newroots, [], result => console.log(result));
 };
 
 export default initAlbums;
