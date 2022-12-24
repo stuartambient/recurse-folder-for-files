@@ -5,7 +5,6 @@ import fg from "fast-glob";
 import { parseMeta } from "../utility/index.js";
 import { v4 as uuidv4 } from "uuid";
 import {
-  roots,
   playlistExtensions,
   audioExtensions,
   fileExtensions,
@@ -36,10 +35,12 @@ const compareDbRecords = async files => {
       .then(parsed => insertFiles(parsed))
       .then(() => (status.new = newEntries));
   }
+
   if (missingEntries.length > 0) {
     deleteFiles(missingEntries);
     status.missing = missingEntries;
-  } else {
+  }
+  if (!newEntries.length && !missingEntries.length) {
     status.nochange = true;
   }
   return status;
@@ -59,8 +60,17 @@ const runFiles = async roots => {
 };
 
 const initFiles = async () => {
-  const [...newroots] = roots;
-  runFiles(newroots);
+  console.time("files");
+  const roots = [
+    "J:/S_Music",
+    "I:/Music",
+    "H:/Top/Music",
+    "F:/Music",
+    "D:/G_MUSIC",
+    "D:/music",
+  ];
+  runFiles(roots, results => console.log(results));
+  console.timeEnd("files");
 };
 
 export default initFiles;
